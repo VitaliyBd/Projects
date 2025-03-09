@@ -1,6 +1,10 @@
 let gridType = "lines"; // Тип сетки по умолчанию
 let cellSize = 50; // Размер ячеек
 let squareSpacing = 5; // Отступ между квадратами
+let lineWidth = 1; // Толщина линий
+let gridColor = "#ffffff"; // Цвет сетки (по умолчанию белый)
+let shapeColor = "#ffffff"; // Цвет квадратов и кругов
+let bgColor = "#000000"; // Цвет фона
 let p5Instance; // Переменная для хранения экземпляра p5.js
 
 export function initGrid(controlsContainer) {
@@ -33,9 +37,9 @@ export function initGrid(controlsContainer) {
 
         function drawGrid(p) {
             p.clear();
-            p.background(0);
-            p.stroke(255);
-            p.fill(255, 50);
+            p.background(bgColor);
+            p.stroke(gridColor);
+            p.fill(shapeColor);
 
             if (gridType === "lines") {
                 drawGridLines(p);
@@ -47,6 +51,7 @@ export function initGrid(controlsContainer) {
         }
 
         function drawGridLines(p) {
+            p.strokeWeight(lineWidth);
             for (let x = 0; x <= p.width; x += cellSize) {
                 p.line(x, 0, x, p.height);
             }
@@ -57,7 +62,7 @@ export function initGrid(controlsContainer) {
 
         function drawGridSquares(p) {
             p.noStroke();
-            p.fill(255, 100);
+            p.fill(shapeColor);
             for (let x = 0; x < p.width; x += cellSize + squareSpacing) {
                 for (let y = 0; y < p.height; y += cellSize + squareSpacing) {
                     p.rect(x, y, cellSize, cellSize);
@@ -67,7 +72,7 @@ export function initGrid(controlsContainer) {
 
         function drawGridCircles(p) {
             p.noStroke();
-            p.fill(255, 100);
+            p.fill(shapeColor);
             for (let x = 0; x < p.width; x += cellSize) {
                 for (let y = 0; y < p.height; y += cellSize) {
                     p.ellipse(x + cellSize / 2, y + cellSize / 2, cellSize * 0.8);
@@ -107,7 +112,7 @@ function setupControls(container) {
     gridTypeSelect.value = gridType;
     gridTypeSelect.addEventListener("change", (event) => {
         gridType = event.target.value;
-        updateGrid(); // Перерисовка без создания нового Canvas
+        updateGrid();
         updateControls(container);
     });
 
@@ -121,42 +126,84 @@ function updateControls(container) {
     container.querySelectorAll("label, input").forEach(el => el.remove());
 
     // Ползунок для размера ячеек
-    const sizeLabel = document.createElement("label");
-    sizeLabel.textContent = "Размер ячеек:";
-    container.appendChild(sizeLabel);
-
-    const sizeInput = document.createElement("input");
-    sizeInput.type = "range";
-    sizeInput.min = "10";
-    sizeInput.max = "100";
-    sizeInput.value = cellSize;
-    sizeInput.classList.add("w-full", "mb-4");
-
-    sizeInput.addEventListener("input", (event) => {
-        cellSize = parseInt(event.target.value);
-        updateGrid(); // Перерисовка без удаления Canvas
+    createSlider(container, "Размер ячеек:", 10, 100, cellSize, (value) => {
+        cellSize = value;
+        updateGrid();
     });
 
-    container.appendChild(sizeInput);
-
-    // Добавляем контроллер для отступов между квадратами, если выбраны квадраты
-    if (gridType === "squares") {
-        const spacingLabel = document.createElement("label");
-        spacingLabel.textContent = "Отступ между квадратами:";
-        container.appendChild(spacingLabel);
-
-        const spacingInput = document.createElement("input");
-        spacingInput.type = "range";
-        spacingInput.min = "0";
-        spacingInput.max = "20";
-        spacingInput.value = squareSpacing;
-        spacingInput.classList.add("w-full", "mb-4");
-
-        spacingInput.addEventListener("input", (event) => {
-            squareSpacing = parseInt(event.target.value);
-            updateGrid(); // Перерисовка без удаления Canvas
+    // Ползунок для толщины линий (только для линий)
+    if (gridType === "lines") {
+        createSlider(container, "Толщина линий:", 1, 50, lineWidth, (value) => {
+            lineWidth = value;
+            updateGrid();
         });
-
-        container.appendChild(spacingInput);
     }
+
+    // Ползунок для отступов между квадратами (только для квадратов)
+    if (gridType === "squares") {
+        createSlider(container, "Отступ между квадратами:", 0, 20, squareSpacing, (value) => {
+            squareSpacing = value;
+            updateGrid();
+        });
+    }
+
+    // Цвет линий (если выбраны линии)
+    if (gridType === "lines") {
+        createColorPicker(container, "Цвет линий:", gridColor, (value) => {
+            gridColor = value;
+            updateGrid();
+        });
+    }
+
+    // Цвет квадратов и кругов
+    if (gridType === "squares" || gridType === "circles") {
+        createColorPicker(container, "Цвет фигур:", shapeColor, (value) => {
+            shapeColor = value;
+            updateGrid();
+        });
+    }
+
+    // Цвет фона (доступен всегда)
+    createColorPicker(container, "Цвет фона:", bgColor, (value) => {
+        bgColor = value;
+        updateGrid();
+    });
+}
+
+// Функция создания слайдера
+function createSlider(container, label, min, max, value, callback) {
+    const sliderLabel = document.createElement("label");
+    sliderLabel.textContent = label;
+    container.appendChild(sliderLabel);
+
+    const slider = document.createElement("input");
+    slider.type = "range";
+    slider.min = min;
+    slider.max = max;
+    slider.value = value;
+    slider.classList.add("w-full", "mb-4");
+
+    slider.addEventListener("input", (event) => {
+        callback(parseInt(event.target.value));
+    });
+
+    container.appendChild(slider);
+}
+
+// Функция создания color picker'а
+function createColorPicker(container, label, value, callback) {
+    const colorLabel = document.createElement("label");
+    colorLabel.textContent = label;
+    container.appendChild(colorLabel);
+
+    const colorInput = document.createElement("input");
+    colorInput.type = "color";
+    colorInput.value = value;
+    colorInput.classList.add("w-full", "mb-4");
+
+    colorInput.addEventListener("input", (event) => {
+        callback(event.target.value);
+    });
+
+    container.appendChild(colorInput);
 }
